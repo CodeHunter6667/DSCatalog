@@ -3,9 +3,12 @@ package com.devsuperior.dscatalog.services;
 import java.util.List;
 
 import com.devsuperior.dscatalog.dto.CategoryDTO;
-import com.devsuperior.dscatalog.services.exceptions.EntityNotFoundException;
-import jakarta.transaction.TransactionScoped;
+import com.devsuperior.dscatalog.services.exceptions.DatabaseException;
+import com.devsuperior.dscatalog.services.exceptions.ResourceFoundException;
+import com.devsuperior.dscatalog.services.exceptions.ResourceNotFoundException;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +32,7 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public CategoryDTO findById(Long id){
         Category category = repository.findById(id).orElseThrow(
-                () -> new EntityNotFoundException("Categoria não encontrada")
+                () -> new ResourceNotFoundException("Categoria não encontrada")
         );
         return new CategoryDTO(category);
     }
@@ -49,16 +52,20 @@ public class CategoryService {
             entity = repository.save(entity);
             return new CategoryDTO(entity);
         } catch (EntityNotFoundException e){
-            throw new EntityNotFoundException("Categoria não encontrada");
+            throw new ResourceNotFoundException("Categoria não encontrada");
         }
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public void delete(Long id){
         if(!repository.existsById(id)){
-            throw new EntityNotFoundException("Categoria não encontrada");
+            throw new ResourceNotFoundException("Categoria não encontrada");
         }
-        repository.deleteById(id);
+        try {
+            repository.deleteById(id);
+        } catch (DataIntegrityViolationException e){
+            throw new DatabaseException("Falha de integridade referencial");
+        }
     }
 
     public static void copyDtoToEntity(CategoryDTO dto, Category entity){
