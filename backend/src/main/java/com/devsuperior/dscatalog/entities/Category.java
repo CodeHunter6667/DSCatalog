@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 @Table(name = "tb_categories")
 public class Category implements Serializable{
     private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -48,6 +49,16 @@ public class Category implements Serializable{
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    @PrePersist
+    public void prePersist(){
+        createdAt = Instant.now();
+    }
+
+    @PreUpdate
+    public void preUpdate(){
+        updatedAt = Instant.now();
     }
 
     @Override
