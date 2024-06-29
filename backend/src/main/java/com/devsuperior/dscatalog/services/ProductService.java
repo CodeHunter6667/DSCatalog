@@ -8,8 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.devsuperior.dscatalog.dto.CategoryDTO;
 import com.devsuperior.dscatalog.dto.ProductDTO;
+import com.devsuperior.dscatalog.entities.Category;
 import com.devsuperior.dscatalog.entities.Product;
+import com.devsuperior.dscatalog.repositories.CategoryRepository;
 import com.devsuperior.dscatalog.repositories.ProductRepository;
 import com.devsuperior.dscatalog.services.exceptions.DatabaseException;
 import com.devsuperior.dscatalog.services.exceptions.ResourceNotFoundException;
@@ -22,6 +25,9 @@ public class ProductService {
     @Autowired
     private ProductRepository repository;
 
+    @Autowired
+    private CategoryRepository categoryRepository;
+
     @Transactional(readOnly = true)
     public Page<ProductDTO> findAllPaged(PageRequest pageRequest){
         Page<Product> page = repository.findAll(pageRequest);
@@ -31,7 +37,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductDTO findById(Long id) {
         Product product = repository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Categoria não encontrada"));
+                () -> new ResourceNotFoundException("Produto não encontrada"));
         return new ProductDTO(product, product.getCategories());
     }
     
@@ -51,14 +57,14 @@ public class ProductService {
             entity = repository.save(entity);
             return new ProductDTO(entity);
         } catch (EntityNotFoundException e){
-            throw new ResourceNotFoundException("Categoria não encontrada");
+            throw new ResourceNotFoundException("Produto não encontrada");
         }
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public void delete(Long id){
         if(!repository.existsById(id)){
-            throw new ResourceNotFoundException("Categoria não encontrada");
+            throw new ResourceNotFoundException("Produto não encontrada");
         }
         try {
             repository.deleteById(id);
@@ -67,11 +73,17 @@ public class ProductService {
         }
     }
 
-    public static void copyDtoToEntity(ProductDTO dto, Product entity){
-        entity.setId(dto.getId());
+    public void copyDtoToEntity(ProductDTO dto, Product entity){
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
         entity.setImgUrl(dto.getImgUrl());
         entity.setDate(dto.getDate());
+        entity.setPrice(dto.getPrice());
+
+        entity.getCategories().clear();
+        for (CategoryDTO catDto : dto.getCategories()) {
+            Category category = categoryRepository.getReferenceById(catDto.getId());
+            entity.getCategories().add(category);
+        }
     }
 }
