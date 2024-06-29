@@ -65,4 +65,8 @@ public class ProductDTO implements Serializable {
     public Instant getDate() {
         return date;
     }
+
+    public List<CategoryDTO> getCategories() {
+        return categories;
+    }
 }
